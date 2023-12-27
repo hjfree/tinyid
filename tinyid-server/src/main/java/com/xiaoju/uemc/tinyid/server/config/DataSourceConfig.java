@@ -4,8 +4,11 @@ import org.apache.commons.beanutils.BeanUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.jdbc.DataSourceBuilder;
-import org.springframework.boot.bind.RelaxedPropertyResolver;
+import org.springframework.boot.context.properties.bind.BindResult;
+import org.springframework.boot.context.properties.bind.Binder;
+import org.springframework.boot.context.properties.source.ConfigurationPropertySource;
+import org.springframework.boot.context.properties.source.ConfigurationPropertySources;
+import org.springframework.boot.jdbc.DataSourceBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
@@ -15,6 +18,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
+import java.util.stream.Collectors;
 
 /**
  * @author du_imba
@@ -28,22 +33,26 @@ public class DataSourceConfig {
     private Environment environment;
     private static final String SEP = ",";
 
-    private static final String DEFAULT_DATASOURCE_TYPE = "org.apache.tomcat.jdbc.pool.DataSource";
+    private static final String DEFAULT_DATASOURCE_TYPE = "com.zaxxer.hikari.HikariDataSource";
 
     @Bean
     public DataSource getDynamicDataSource() {
         DynamicDataSource routingDataSource = new DynamicDataSource();
         List<String> dataSourceKeys = new ArrayList<>();
-        RelaxedPropertyResolver propertyResolver = new RelaxedPropertyResolver(environment, "datasource.tinyid.");
-        String names = propertyResolver.getProperty("names");
-        String dataSourceType = propertyResolver.getProperty("type");
-
+        Iterable<ConfigurationPropertySource> sources = ConfigurationPropertySources.get(environment);
+        Binder binder = new Binder(sources);
+        BindResult<Properties> bindResult = binder.bind("datasource.tinyid", Properties.class);
+        Properties properties = bindResult.get();
+        String names = properties.getProperty("names");
+        String dataSourceType = properties.getProperty("type");
         Map<Object, Object> targetDataSources = new HashMap<>(4);
         routingDataSource.setTargetDataSources(targetDataSources);
         routingDataSource.setDataSourceKeys(dataSourceKeys);
         // 多个数据源
         for (String name : names.split(SEP)) {
-            Map<String, Object> dsMap = propertyResolver.getSubProperties(name + ".");
+            //将配置信息转换成为map
+            Map<String, Object> dsMap = properties.entrySet().stream().filter(item -> item.getKey().toString().startsWith(name))
+                    .collect(Collectors.toMap(item -> item.getKey().toString().replace(name + ".", ""), item -> item.getValue()));
             DataSource dataSource = buildDataSource(dataSourceType, dsMap);
             buildDataSourceProperties(dataSource, dsMap);
             targetDataSources.put(name, dataSource);

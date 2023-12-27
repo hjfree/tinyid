@@ -12,7 +12,7 @@
     <artifactId>tinyid-server</artifactId>
 
     <properties>
-        <spring.version>1.5.9.RELEASE</spring.version>
+        <spring.version>2.5.3</spring.version>
     </properties>
 
     <dependencies>
@@ -42,11 +42,23 @@
             <artifactId>spring-boot-starter-test</artifactId>
             <version>${spring.version}</version>
             <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <artifactId>junit-jupiter-api</artifactId>
+                    <groupId>org.junit.jupiter</groupId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-log4j2</artifactId>
             <version>${spring.version}</version>
+            <exclusions>
+                <exclusion>
+                    <artifactId>slf4j-api</artifactId>
+                    <groupId>org.slf4j</groupId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -62,12 +74,11 @@
         <dependency>
             <groupId>mysql</groupId>
             <artifactId>mysql-connector-java</artifactId>
-            <version>5.1.44</version>
+            <version>8.0.31</version>
         </dependency>
         <dependency>
             <groupId>commons-beanutils</groupId>
             <artifactId>commons-beanutils</artifactId>
-            <version>1.9.3</version>
         </dependency>
     </dependencies>
 
